@@ -138,7 +138,7 @@ jobs:
               platform: ARM64,
             }
     with:
-      upload-artifact: ${{ inputs.upload-artifact || true }}
+      upload-artifact: true
       target: ${{ matrix.job.target }}
       configuration: Release
       platform: ${{ matrix.job.platform }}
