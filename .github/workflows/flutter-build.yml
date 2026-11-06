@@ -98,8 +98,7 @@ jobs:
           echo "VCPKG_ROOT=C:/vcpkg" >> $GITHUB_ENV
           C:/vcpkg/vcpkg integrate install
           C:/vcpkg/vcpkg install --triplet x64-windows-static \
-            --x-install-root="C:/vcpkg/installed" \
-            libvpx libyuv opus aom ffmpeg
+            --x-install-root="C:/vcpkg/installed"
 
       - name: Download RustDeskTempTopMostWindow artifacts
         uses: actions/download-artifact@v4
