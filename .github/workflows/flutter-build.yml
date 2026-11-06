@@ -92,13 +92,15 @@ jobs:
           vcpkgGitCommitId: ${{ env.VCPKG_COMMIT_ID }}
           doNotCache: false
 
-      - name: Configure and Install vcpkg dependencies
+      - name: Install vcpkg dependencies
         shell: bash
+        env:
+          VCPKG_DEFAULT_HOST_TRIPLET: x64-windows-static
         run: |
-          echo "VCPKG_ROOT=C:/vcpkg" >> $GITHUB_ENV
-          C:/vcpkg/vcpkg integrate install
-          C:/vcpkg/vcpkg install --triplet x64-windows-static \
-            --x-install-root="C:/vcpkg/installed"
+          if ! $VCPKG_ROOT/vcpkg install --triplet x64-windows-static --x-install-root="$VCPKG_ROOT/installed"; then
+            echo "Fallo en la instalación de vcpkg"
+            exit 1
+          fi
 
       - name: Download RustDeskTempTopMostWindow artifacts
         uses: actions/download-artifact@v4
@@ -108,10 +110,6 @@ jobs:
 
       - name: Build RustDesk
         shell: powershell
-        env:
-          VCPKG_ROOT: "C:/vcpkg"
-          INCLUDE: "C:/vcpkg/installed/x64-windows-static/include;$env:INCLUDE"
-          LIB: "C:/vcpkg/installed/x64-windows-static/lib;$env:LIB"
         run: |
           python3 .\build.py --portable --flutter --skip-portable-pack --hwcodec --vram
           mv ./flutter/build/windows/x64/runner/Release ./rustdesk
