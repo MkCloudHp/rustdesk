@@ -59,22 +59,18 @@ jobs:
           flutter doctor -v
           flutter precache --windows
 
-          # Obtener dinámicamente la raíz de Flutter sin depender de rutas rígidas
+          # Obtener dinámicamente la ruta de Flutter
           $flutterBin = Split-Path -Parent (Get-Command flutter).Source
           $engineDest = Join-Path $flutterBin "cache\artifacts\engine\windows-x64-release"
 
-          # Asegurar que la carpeta de destino exista
           if (-not (Test-Path $engineDest)) {
             New-Item -ItemType Directory -Path $engineDest -Force | Out-Null
           }
 
-          # Descargar y extraer el motor personalizado de RustDesk
           Invoke-WebRequest -Uri https://github.com/rustdesk/engine/releases/download/main/windows-x64-release.zip -OutFile windows-x64-release.zip
           Expand-Archive -Path windows-x64-release.zip -DestinationPath windows-x64-release -Force
-
-          # Copiar los binarios sobrescribiendo el motor oficial
           Copy-Item -Path "windows-x64-release\*" -Destination $engineDest -Recurse -Force
-          
+
       - name: Patch Flutter
         shell: bash
         run: |
@@ -96,10 +92,14 @@ jobs:
           vcpkgGitCommitId: ${{ env.VCPKG_COMMIT_ID }}
           doNotCache: false
 
-      - name: Install vcpkg dependencies
+      - name: Configure and Install vcpkg dependencies
         shell: bash
         run: |
-          $VCPKG_ROOT/vcpkg install --triplet x64-windows-static --x-install-root="$VCPKG_ROOT/installed"
+          echo "VCPKG_ROOT=C:/vcpkg" >> $GITHUB_ENV
+          C:/vcpkg/vcpkg integrate install
+          C:/vcpkg/vcpkg install --triplet x64-windows-static \
+            --x-install-root="C:/vcpkg/installed" \
+            libvpx libyuv opus aom ffmpeg
 
       - name: Download RustDeskTempTopMostWindow artifacts
         uses: actions/download-artifact@v4
@@ -109,6 +109,10 @@ jobs:
 
       - name: Build RustDesk
         shell: powershell
+        env:
+          VCPKG_ROOT: "C:/vcpkg"
+          INCLUDE: "C:/vcpkg/installed/x64-windows-static/include;$env:INCLUDE"
+          LIB: "C:/vcpkg/installed/x64-windows-static/lib;$env:LIB"
         run: |
           python3 .\build.py --portable --flutter --skip-portable-pack --hwcodec --vram
           mv ./flutter/build/windows/x64/runner/Release ./rustdesk
